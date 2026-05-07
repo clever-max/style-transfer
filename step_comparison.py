@@ -7,6 +7,8 @@ import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import matplotlib.font_manager as fm
+from PIL import Image
+import numpy as np
 
 # 尝试配置中文字体，找不到则使用英文标签
 _CHINESE_FONT = None
@@ -88,7 +90,7 @@ def generate_step_comparison(experiment_dir, step_files, save_path=None):
     for idx, (title, fpath) in enumerate(image_items):
         r = idx // cols
         c = idx % cols
-        img = plt.imread(fpath)
+        img = np.array(Image.open(fpath).convert("RGB"))
         axes[r][c].imshow(img)
         axes[r][c].set_title(title, fontsize=10)
         axes[r][c].axis('off')

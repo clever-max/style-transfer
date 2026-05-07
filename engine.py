@@ -64,8 +64,11 @@ def run_style_transfer(content_path, style_path,
     inter_dir = os.path.join(experiment_dir, "intermediate")
     os.makedirs(inter_dir, exist_ok=True)
 
-    shutil.copy2(content_path, os.path.join(experiment_dir, "content_original.png"))
-    shutil.copy2(style_path, os.path.join(experiment_dir, "style_original.png"))
+    from PIL import Image as PILImage
+    PILImage.open(content_path).convert("RGB").save(
+        os.path.join(experiment_dir, "content_original.png"), "PNG")
+    PILImage.open(style_path).convert("RGB").save(
+        os.path.join(experiment_dir, "style_original.png"), "PNG")
 
     start_time = time.time()
 
