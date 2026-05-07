@@ -23,14 +23,21 @@ from step_comparison import generate_step_comparison
 CONTENT_DIR = "images/content"
 STYLE_DIR = "images/style"
 
+# === v2.0 实验配置（使用论文对齐的损失公式和参数）===
 EXPERIMENTS = [
     {"content": "content1.png", "style": "style_starry.png", "name": "starry",
-     "content_weight": 1e0, "style_weight": 1e6, "tv_weight": 1e-1, "steps": 300},
+     "content_weight": 1e0, "style_weight": 1e2, "tv_weight": 1e-3, "steps": 300},
     {"content": "content1.png", "style": "style_waves.png", "name": "waves",
-     "content_weight": 1e0, "style_weight": 1e6, "tv_weight": 1e-1, "steps": 300},
+     "content_weight": 1e0, "style_weight": 1e2, "tv_weight": 1e-3, "steps": 300},
     {"content": "content1.png", "style": "style_mosaic.png", "name": "mosaic",
-     "content_weight": 1e0, "style_weight": 1e6, "tv_weight": 1e-1, "steps": 300},
+     "content_weight": 1e0, "style_weight": 1e2, "tv_weight": 1e-3, "steps": 300},
 ]
+
+# === v1.0 旧版配置（保留供对照）===
+# EXPERIMENTS_v1 = [
+#     {"content": "content1.png", "style": "style_starry.png", "name": "starry",
+#      "content_weight": 1e0, "style_weight": 1e6, "tv_weight": 1e-1, "steps": 300},
+# ]
 
 
 def main():

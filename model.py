@@ -1,6 +1,11 @@
 """
 VGG19 特征提取器模块
 —— 用于神经风格迁移中提取内容特征和风格特征
+
+=== v2.0 改进 ===
+1. MaxPool2d → AvgPool2d：减少棋盘格伪影，产生更平滑的特征图
+2. content_layer conv4_2 → relu4_2：与 Caffe VGG19 中的 'conv4_2' 语义对齐
+   （Caffe 中 conv 层名称包含 ReLU 输出，PyTorch 中 conv 与 relu 分开命名）
 """
 import torch.nn as nn
 from torchvision import models
@@ -17,9 +22,10 @@ vgg19_layers = [
     'conv5_3', 'relu5_3', 'conv5_4', 'relu5_4', 'pool5',
 ]
 
-# 内容层：使用 conv4_2 的特征图作为内容表示
-#   —— 较深层保留语义信息，舍弃像素级细节
-content_layer = ['conv4_2']
+# 内容层（v2.0 修正）：使用 relu4_2 的输出作为内容表示
+#   在 Caffe 的命名约定中，'conv4_2' 指的是 conv+relu 之后的输出
+#   因此 PyTorch 中应使用 'relu4_2' 而非 'conv4_2'
+content_layer = ['relu4_2']
 
 # 风格层：使用 5 个不同深度的卷积层提取多尺度风格纹理
 #   —— 浅层捕获简单纹理，深层捕获复杂结构
@@ -28,22 +34,21 @@ style_layers = ['conv1_1', 'conv2_1', 'conv3_1', 'conv4_1', 'conv5_1']
 
 class VGG19FeatureExtractor(nn.Module):
     """
-    VGG19 特征提取器
+    VGG19 特征提取器（v2.0）
 
     加载预训练的 VGG19 模型，冻结参数后作为固定特征提取器。
     在风格迁移中，只用于前向传播提取特征，不参与梯度更新。
+
+    v2.0 改进：将 MaxPool2d 替换为 AvgPool2d
+        - MaxPool 取最大值，产生锐利边缘和棋盘格伪影
+        - AvgPool 取平均值，特征图更平滑，风格迁移效果更自然
+        - 注意：预训练权重是在 MaxPool 下训练的，替换后会有轻微分布偏移，
+          但风格迁移中对颜色/纹理的感知鲁棒性使此影响可忽略
     """
 
     def __init__(self, pretrained=True):
-        """
-        初始化特征提取器
-
-        参数:
-            pretrained: 是否加载 ImageNet 预训练权重（默认 True）
-        """
         super(VGG19FeatureExtractor, self).__init__()
 
-        # 加载 VGG19 的卷积层部分（不含全连接层）
         try:
             vgg19 = models.vgg19(
                 weights='IMAGENET1K_V1' if pretrained else None
@@ -51,13 +56,17 @@ class VGG19FeatureExtractor(nn.Module):
         except Exception:
             vgg19 = models.vgg19(pretrained=pretrained).features
 
-        # 将 VGG19 的各层按名称注册到 Sequential 中，便于按名称提取中间层特征
         self.model = nn.Sequential()
         for i, layer in enumerate(vgg19):
             name = vgg19_layers[i]
+            if isinstance(layer, nn.MaxPool2d):
+                layer = nn.AvgPool2d(
+                    kernel_size=layer.kernel_size,
+                    stride=layer.stride,
+                    padding=layer.padding
+                )
             self.model.add_module(name, layer)
 
-        # 冻结所有参数 —— 风格迁移中 VGG19 只做特征提取，不更新权重
         for param in self.model.parameters():
             param.requires_grad = False
 

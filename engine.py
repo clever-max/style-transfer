@@ -1,6 +1,11 @@
 """
 训练引擎模块
 —— 提供可回调的风格迁移训练函数，每次训练自动创建独立文件夹
+
+=== v2.0 参数调整 ===
+1. style_weight: 1e6 → 1e2  （配合修正后的风格损失公式，使 α/β ≈ 0.002 接近论文推荐值）
+2. tv_weight:   1e-1 → 1e-3 （降低总变差正则化强度，保留更多高频纹理）
+3. 新增等权分层：每层风格损失除以 style_layers 数量（5），确保浅层/深层贡献均衡
 """
 import os
 import time
@@ -18,8 +23,8 @@ BASE_EXPERIMENT_DIR = "experiments"
 
 
 def run_style_transfer(content_path, style_path,
-                       content_weight=1e0, style_weight=1e6,
-                       tv_weight=1e-1, num_steps=300, save_interval=50,
+                       content_weight=1e0, style_weight=1e2,
+                       tv_weight=1e-3, num_steps=300, save_interval=50,
                        progress_callback=None,
                        max_size=512):
     """
@@ -104,6 +109,7 @@ def run_style_transfer(content_path, style_path,
                          for cl_name, cl_loss in zip(content_layer, content_losses))
             s_loss = sum(sl_loss(gen_features[sl_name])
                          for sl_name, sl_loss in zip(style_layers, style_losses_list))
+            s_loss = s_loss / len(style_layers)
             tv_loss = total_variation_loss(target)
 
             total_loss = (content_weight * c_loss
